@@ -1,4 +1,4 @@
-import { generateTranscriptAudio } from "./eleven.ts";
+import { generateTranscriptAudio } from "./audioGenerator.ts";
 import concatenateAudioFiles from "./concat.ts";
 import getAudioDuration from "./audioduration.ts";
 import { generateCleanSrt } from "./cleanSrt.ts";
