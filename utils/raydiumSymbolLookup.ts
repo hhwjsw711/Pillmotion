@@ -3,30 +3,6 @@ import fetch from "node-fetch";
 const TRADINGVIEW_SEARCH_URL =
     "https://symbol-search.tradingview.com/symbol_search/v3/?text=";
 
-interface TradingViewSymbol {
-    symbol: string;
-    description: string;
-    type: string;
-    exchange: string;
-}
-
-interface TradingViewResponse {
-    symbols: TradingViewSymbol[];
-}
-
-interface MarketData {
-    price: number;
-    volume: number;
-    marketCap: number;
-    change24h: number;
-    symbol: string;
-}
-
-/**
- * Searches TradingView for symbol suggestions
- * @param ticker - The ticker symbol (e.g., "FWOG")
- * @returns Array of matching symbols with their details
- */
 export async function searchTradingViewSymbols(
     ticker: string
 ): Promise<Pick<TradingViewSymbol, "symbol" | "description" | "type">[]> {
