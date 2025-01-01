@@ -5,7 +5,8 @@
     "type": "module",
     "scripts": {
         "start": "remotion studio",
-        "build": "remotion render Video out/video.mp4",
+        "build:story": "remotion render Story out/story-video.mp4 --concurrency=1",
+        "build:meme": "remotion render Meme out/meme-video.mp4 --concurrency=1",
         "upgrade": "remotion upgrade",
         "test": "eslint src --ext ts,tsx,js,jsx && tsc"
     },
@@ -28,7 +29,7 @@
         "groq-sdk": "^0.8.0",
         "lucide-react": "^0.460.0",
         "mysql2": "^3.9.1",
-        "openai": "^4.46.1",
+        "openai": "^4.77.0",
         "parse-srt": "1.0.0-alpha",
         "react": "^18.0.0",
         "react-dom": "^18.0.0",
