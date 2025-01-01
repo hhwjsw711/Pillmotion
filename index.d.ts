@@ -32,17 +32,20 @@ interface VideoSecrets {
     BLUEPILL_VOICE_ID: string;
     BLACKPILL_VOICE_ID: string;
     DEFAULT_VOICE_ID: string;
+    SOCIAL_DATA_API_KEY: string;
 }
 
 interface Transcript {
-    id: string;
     agentId: string;
     text: string;
+}
+
+interface StoryTranscript extends Transcript {
     order: number;
     componentOrder: number;
 }
 
-interface TranscriptWithAgent extends Transcript {
+interface StoryTranscriptWithAgent extends StoryTranscript {
     agent: Agent;
 }
 
@@ -96,5 +99,52 @@ interface StoryLocation {
 }
 
 interface StoryComponentWithAgent extends StoryComponent {
-    characters: Agent[];
+    agents: Agent[];
 }
+
+interface MemeCoinTranscript extends Transcript {
+    tweet_id?: string;
+}
+
+interface MemeCoinTranscriptResponse {
+    transcript: MemeCoinTranscript[];
+    ticker: string;
+    tradingViewSymbol: string;
+    currentPrice: number;
+    marketCap: number;
+    percentageChange: number;
+}
+
+interface Tweet {
+    full_text: string;
+    user: {
+        screen_name: string;
+        followers_count: number;
+    };
+    id_str: string;
+}
+
+interface TradingViewSymbol {
+    symbol: string;
+    description: string;
+    type: string;
+    exchange: string;
+}
+
+interface TradingViewResponse {
+    symbols: TradingViewSymbol[];
+}
+
+interface MarketData {
+    price: number;
+    volume: number;
+    marketCap: number;
+    change24h: number;
+    symbol: string;
+}
+
+type AgentId = "bluepill" | "redpill" | "whitepill" | "blackpill" | "narrator";
+
+type VideoType = "story" | "meme";
+
+type Music = "wii" | "none" | "duck" | "monkey";
