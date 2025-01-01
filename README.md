@@ -21,6 +21,7 @@ A flexible video generation system that makes it easy to create videos using dif
 
 -   Docker
 -   Bun
+-   FFmpeg
 
 ### Installation
 
@@ -35,18 +36,27 @@ docker build -t transcribe .
 ```bash
 docker run -d \
  --name transcribe \
- -p 5000:5000 \
+ -p 5005:5005 \
  -v $(pwd)/public:/app/video/public \
  transcribe \
  gunicorn \
  --timeout 120 \
  -w 1 \
- -b 0.0.0.0:5000 \
+ -b 0.0.0.0:5005 \
  --access-logfile access.log \
  --error-logfile error.log \
  --chdir /app/video \
  "transcribe:app"
 ```
+
+3. Add .env file based on .env.example
+
+-   OpenAI API key (for generating transcript)
+-   Claude API key (cleans srt files)
+-   ElevenLabs API key + voice ids (for audio generation)
+-   Social Data API key (if you want to use the meme coin template)
+
+4. Run `bun install` to install dependencies
 
 ## Usage
 
@@ -109,3 +119,42 @@ To add a new template (e.g., "shitpost"):
 -   `data/`: Example story data
 
 Video generation is slow because these templates run with concurrency 1 because adding concurrency adds a few minor visual bugs in the subtitles. But if you need it to go fast, change the concurrency in the scripts of package.json. To see the max concurrency your computer can do, run `bun run os.ts`.
+
+## System Requirements
+
+-   At least 8GB RAM recommended
+-   FFmpeg installed on your system
+-   Node.js 18+ (for Bun compatibility)
+-   Disk space for video processing and docker image (at least 6GB recommended)
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **Docker Service Not Running**
+
+    ```bash
+    # Start Docker service
+    sudo systemctl start docker
+    ```
+
+2. **Port 5005 Already in Use**
+
+    ```bash
+    # Find and kill process using port 5005
+    lsof -i :5005
+    kill -9 <PID>
+    ```
+
+3. **FFmpeg Missing**
+    ```bash
+    # MacOS
+    brew install ffmpeg
+    # Ubuntu
+    sudo apt-get install ffmpeg
+    ```
+
+#### Logs
+
+-   Check Docker logs: `docker logs transcribe`
+-   Application logs are in `access.log` and `error.log`
