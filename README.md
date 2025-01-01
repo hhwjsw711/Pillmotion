@@ -1,52 +1,106 @@
-# Agent Chat Interface
+# Pillmotion
 
-A flexible chat interface for interacting with AI agents.
+A flexible video generation system that makes it easy to create videos using different templates while sharing core functionality like audio generation and subtitle synchronization. Easily extendable to your own templates, and your own agents.
 
-## Getting Started
+## Features
+
+-   Multiple video template support (Story mode, Meme coin mode)
+-   Automated audio generation and subtitle synchronization
+-   Word-to-word transcription using whisper_timestamped
+-   Extensible template system
+-   Trading view integration for meme coin data
+
+## Setup
+
+### Prerequisites
+
+-   Docker
+-   Bun
 
 ### Installation
 
-```bash
-npm install
-```
-
-### Running the Chat Interface
-
-There are two ways to interact with the agent:
-
-#### 1. Console Chat (Terminal)
-
-Run the console-based chat interface:
+1. Build the transcription service:
 
 ```bash
-npm run start -- --chat
+docker build -t transcribe .
 ```
 
-This launches an interactive terminal chat session with the agent. Available commands:
-
--   Type your message and press Enter to chat
--   `exit` or `quit`: Exit the chat
--   `help`: Show help message
--   `clear`: Clear conversation history
-
-#### 2. Web Interface
-
-Start the web-based chat interface:
+2. Start the transcription service:
 
 ```bash
-npm run start -- --web
+docker run -d \
+ --name transcribe \
+ -p 5000:5000 \
+ -v $(pwd)/public:/app/video/public \
+ transcribe \
+ gunicorn \
+ --timeout 120 \
+ -w 1 \
+ -b 0.0.0.0:5000 \
+ --access-logfile access.log \
+ --error-logfile error.log \
+ --chdir /app/video \
+ "transcribe:app"
 ```
 
-This launches a web server (default port 3000) with a ChatGPT-style interface. Open your browser to:
+## Usage
 
-```
-http://localhost:3000
-```
+### Generate Story Video
 
-### Environment Variables
-
--   `SERVER_PORT`: Web server port (default: 3000)
-
+```bash
+bun run build.ts -t story
 ```
 
+### Generate Meme Coin Video
+
+```bash
+bun run build.ts -t meme -s <COIN_SYMBOL>
+# Example:
+bun run build.ts -t meme -s PILLZUMI
 ```
+
+## How It Works
+
+### Core Functionality
+
+The system uses whisper_timestamped for precise word-to-word transcription, which is then converted to SRT format. The transcription is cleaned up using the original transcript as context to correct any model errors.
+
+Audio files are mapped to specific speakers using the transcript data. When generating SRT files, each audio segment (e.g., 'redpill-0.mp3') gets a corresponding SRT file ('redpill-0.srt'). All audio files are ultimately concatenated into a single `public/audio.mp3` file, while maintaining speaker timing information through the SRT files.
+
+### Templates
+
+The project includes two main templates:
+
+1. **Story Template**
+
+    - Uses pre-generated story transcript
+    - Example data provided in the `data` folder
+    - Requires external story transcript generation system. We use Eliza for our story generation pipeline.
+
+2. **Meme Coin Template**
+    - End-to-end implementation
+    - Fetches solana memecoin data from Trading View
+    - Generates transcripts automatically
+    - Uses the same core audio and subtitle generation system
+
+## Extending with New Templates
+
+To add a new template (e.g., "shitpost"):
+
+1. Create `ShitpostComposition.tsx`
+2. Add the composition to `Root.tsx` (maybe with id="Shitpost")
+3. Add `generateShitpostContextContent` function in `contextGenerators.ts`
+4. Update `invariantContext` function with new variables that are used by this new template.
+5. Update types in `index.d.ts`
+6. add generateShitpostTranscript function in `transcript.ts`
+7. Add switch case for this new template in `build.ts`
+
+## Project Structure
+
+-   `src/tmp/context.tsx`: Dynamic context file for all templates
+-   `src/Root.tsx`: Contains all template compositions
+-   `contextGenerators.ts`: Generates template specific context
+-   `utils/`: Helper functions and utilities
+-   `data/`: Example story data
+
+Video generation is slow because these templates run with concurrency 1 because adding concurrency adds a few minor visual bugs in the subtitles. But if you need it to go fast, change the concurrency in the scripts of package.json. To see the max concurrency your computer can do, run `bun run os.ts`.
