@@ -169,7 +169,7 @@ const SubtitleFileSchema = z.object({
     }),
 });
 
-export const AudioGramSchema = z.object({
+export const StorySchema = z.object({
     initialAgentName: z.string(),
     agentDetails: AgentDetailsSchema,
     audioOffsetInSeconds: z.number().min(0),
@@ -189,7 +189,7 @@ export const AudioGramSchema = z.object({
     waveNumberOfSamples: z.enum(["32", "64", "128", "256", "512"]),
 });
 
-type AudiogramCompositionSchemaType = z.infer<typeof AudioGramSchema>;
+type StorySchemaType = z.infer<typeof StorySchema>;
 
 const AudioViz: React.FC<{
     numberOfSamples: number;
@@ -303,7 +303,7 @@ const getSegmentLocationForIndex = (index: number): string => {
         : "";
 };
 
-export const AudiogramComposition: React.FC<AudiogramCompositionSchemaType> = ({
+export const StoryComposition: React.FC<StorySchemaType> = ({
     subtitlesFileName,
     agentDetails,
     audioFileName,
@@ -480,7 +480,7 @@ export const AudiogramComposition: React.FC<AudiogramCompositionSchemaType> = ({
                 <Sequence from={-audioOffsetInFrames}>
                     {/*@ts-ignore */}
                     <Audio src={audioFileName} />
-                    {music !== "NONE" && (
+                    {music !== "none" && (
                         <Audio volume={0.25} src={staticFile(music)} />
                     )}
                     <div className="relative -z-20 flex flex-col w-full h-full font-remotionFont">
