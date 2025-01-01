@@ -1,18 +1,17 @@
-import { spawn } from "child_process";
-import path from "path";
-import { rm, unlink, mkdir } from "fs/promises";
-import transcribeFunction from "./transcribe";
+import { parseArgs } from "node:util";
+import { generateTranscriptAudio } from "./audioGenerator";
+import {
+    generateStoryContextContent,
+    generateMemeContextContent,
+} from "./contextGenerators";
+import { writeFile } from "fs/promises";
+import transcribe from "./transcribe";
 import { storyComponents } from "./data/storyComponents";
-import { transcript } from "./data/transcript";
+import { storyTranscript } from "./data/storyTranscript";
 import { story } from "./data/story";
 import { season } from "./data/season";
-import {
-    bluepill,
-    redpill,
-    whitepill,
-    blackpill,
-    narrator,
-} from "./data/agents";
+import generateMemeCoinTranscript from "./transcript";
+import { cleanupResources, runBuild } from "./utils/buildUtils";
 
 const secrets: VideoSecrets = {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY!,
@@ -24,115 +23,91 @@ const secrets: VideoSecrets = {
     BLUEPILL_VOICE_ID: process.env.BLUEPILL_VOICE_ID!,
     BLACKPILL_VOICE_ID: process.env.BLACKPILL_VOICE_ID!,
     DEFAULT_VOICE_ID: process.env.DEFAULT_VOICE_ID!,
+    SOCIAL_DATA_API_KEY: process.env.SOCIAL_DATA_API_KEY!,
 };
 
-export async function cleanupResources() {
-    try {
-        await rm(path.join("public", "srt"), { recursive: true, force: true });
-        await rm(path.join("public", "voice"), {
-            recursive: true,
-            force: true,
-        });
-        await unlink(path.join("public", `audio.mp3`)).catch((e) =>
-            console.error(e)
-        );
-        await unlink(path.join("src", "tmp", "context.tsx")).catch((e) =>
-            console.error(e)
-        );
-        await mkdir(path.join("public", "srt"), { recursive: true });
-        await mkdir(path.join("public", "voice"), { recursive: true });
-    } catch (err) {
-        console.error(`Error during cleanup: ${err}`);
+const { values } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+        type: {
+            type: "string",
+            short: "t",
+            default: "story",
+        },
+        ticker: {
+            type: "string",
+            short: "s",
+            default: "PILLZUMI",
+        },
+    },
+});
+
+async function main() {
+    const videoType = values.type as VideoType;
+    let transcript: Transcript[] = [];
+    let contextContent: string = "";
+
+    switch (videoType) {
+        case "story": {
+            console.log("📝 Generating story transcript... ");
+            transcript = storyTranscript;
+            const { audios } = await generateTranscriptAudio(
+                transcript,
+                secrets
+            );
+            contextContent = generateStoryContextContent(
+                audios,
+                storyTranscript,
+                season,
+                story,
+                storyComponents
+            );
+            break;
+        }
+        case "meme": {
+            console.log("🎭 Generating meme transcript...");
+            const agentA = "redpill";
+            const agentB = "bluepill";
+            const ticker = values.ticker;
+            const duration = 1;
+
+            const memeTranscript = await generateMemeCoinTranscript(
+                agentA,
+                agentB,
+                ticker,
+                duration,
+                secrets
+            );
+
+            transcript = memeTranscript.transcript;
+            const { audios } = await generateTranscriptAudio(
+                transcript,
+                secrets
+            );
+
+            contextContent = generateMemeContextContent(
+                audios,
+                agentA,
+                agentB,
+                duration,
+                60,
+                "wii",
+                ticker,
+                memeTranscript.tradingViewSymbol,
+                memeTranscript.currentPrice,
+                memeTranscript.marketCap,
+                memeTranscript.percentageChange
+            );
+            break;
+        }
+        default:
+            throw new Error(`Unknown video type: ${videoType}`);
     }
-}
 
-async function runBuild() {
-    return new Promise((resolve, reject) => {
-        console.log("Starting build process...");
-        const buildProcess = spawn("npm", ["run", "build"], {
-            stdio: ["pipe", "pipe", "pipe"],
-            shell: true,
-        });
-
-        buildProcess.stdout.on("data", (data) => {
-            process.stdout.write(`Build stdout: ${data}`);
-        });
-
-        buildProcess.stderr.on("data", (data) => {
-            process.stderr.write(`Build stderr: ${data}`);
-        });
-
-        buildProcess.on("error", (error) => {
-            console.error("Build process error:", error);
-            reject(error);
-        });
-
-        buildProcess.on("close", (code) => {
-            console.log(`Build process exited with code ${code}`);
-            if (code === 0) {
-                resolve(void 0);
-            } else {
-                reject(new Error(`Build process failed with code ${code}`));
-            }
-        });
-    });
-}
-
-export async function generateVideoOnLatestStory(
-    transcript: TranscriptWithAgent[],
-    season: Season,
-    story: Story,
-    storyComponents: StoryComponentWithAgent[],
-    secrets: VideoSecrets
-) {
-    await transcribeFunction(
-        transcript,
-        season,
-        story,
-        storyComponents,
-        secrets
-    );
-    await runBuild();
+    await writeFile("./src/tmp/context.tsx", contextContent, "utf-8");
+    await transcribe(transcript, secrets);
+    await runBuild(videoType);
     await cleanupResources();
 }
 
-(async () => {
-    const transcriptWithAgent = transcript.map((t) => ({
-        ...t,
-        agent:
-            t.agentId === "bluepill"
-                ? bluepill
-                : t.agentId === "redpill"
-                ? redpill
-                : t.agentId === "whitepill"
-                ? whitepill
-                : t.agentId === "blackpill"
-                ? blackpill
-                : t.agentId === "narrator"
-                ? narrator
-                : bluepill,
-    }));
-    const storyComponentsWithAgent = storyComponents.map((sc) => ({
-        ...sc,
-        characters: sc.characters
-            .map((c) =>
-                c === "bluepill"
-                    ? bluepill
-                    : c === "redpill"
-                    ? redpill
-                    : c === "whitepill"
-                    ? whitepill
-                    : c === "blackpill"
-                    ? blackpill
-                    : null
-            )
-            .filter((c): c is Agent => c !== null),
-    }));
-    await generateVideoOnLatestStory(
-        transcriptWithAgent,
-        season,
-        story,
-        storyComponentsWithAgent,
-        secrets
-    );
-})();
+main();
