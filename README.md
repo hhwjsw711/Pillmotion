@@ -10,6 +10,11 @@ A flexible video generation system that makes it easy to create videos using dif
 -   Extensible template system
 -   Trading view integration for meme coin data
 
+## Example videos
+
+-   [Story mode](./out/story-video.mp4)
+-   [Meme coin mode](./out/meme-video.mp4)
+
 ## Setup
 
 ### Prerequisites
