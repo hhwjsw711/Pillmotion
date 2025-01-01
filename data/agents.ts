@@ -70,13 +70,13 @@ export const bluepill: Agent = {
         ],
         relationships: [
             {
-                agentId: "redpillzumi",
+                agentId: "redpill",
                 type: "antagonist",
                 description:
                     "Frequently disagrees with their attempts to 'wake people up'",
             },
             {
-                agentId: "blackpillzumi",
+                agentId: "blackpill",
                 type: "skeptic",
                 description:
                     "Distrusts their premium mindset courses and marketing",
