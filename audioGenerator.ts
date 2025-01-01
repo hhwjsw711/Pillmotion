@@ -1,42 +1,8 @@
 import fetch from "node-fetch";
 import fs from "fs";
-import { writeFile } from "fs/promises";
-
-// Add logging at import time
-console.log("🔄 Initializing eleven.mjs module");
-
-// First, let's add the emoji array and function at the top level
-const storyEmojis = [
-    "🌟",
-    "💫",
-    "✨",
-    "🔥",
-    "⚡️",
-    "💥",
-    "🌪️",
-    "🎭",
-    "🎪",
-    "🎬",
-    "🎯",
-    "🎲",
-    "🎨",
-    "🌈",
-    "💎",
-    "🔮",
-    "⚔️",
-    "🛡️",
-    "🏆",
-    "👑",
-];
-
-const getRandomEmoji = () =>
-    storyEmojis[Math.floor(Math.random() * storyEmojis.length)];
 
 export async function generateTranscriptAudio(
-    transcript: TranscriptWithAgent[],
-    season: Season,
-    story: Story,
-    storyComponents: StoryComponentWithAgent[],
+    transcript: MemeCoinTranscript[],
     secrets: VideoSecrets
 ) {
     console.log("⭐ Starting generateTranscriptAudio");
@@ -49,69 +15,61 @@ export async function generateTranscriptAudio(
         const audios = [];
 
         for (let i = 0; i < transcript.length; i++) {
-            const person = transcript[i].agent;
-            const line = transcript[i].text;
-            let personName = person.name;
+            let agentId = transcript[i].agentId;
+            const text = transcript[i].text;
 
             console.log(
-                `🎭 Processing entry ${i + 1}/${
-                    transcript.length
-                }: ${personName}`
+                `🎭 Processing entry ${i + 1}/${transcript.length}: ${agentId}`
             );
 
             if (
-                personName !== "narrator" &&
-                personName !== "redpill" &&
-                personName !== "whitepill" &&
-                personName !== "bluepill" &&
-                personName !== "blackpill"
+                agentId !== "narrator" &&
+                agentId !== "redpill" &&
+                agentId !== "whitepill" &&
+                agentId !== "bluepill" &&
+                agentId !== "blackpill"
             ) {
                 console.log(
-                    `⚠️ Unknown character type: ${personName}, setting to unknown`
+                    `⚠️ Unknown character type: ${agentId}, setting to unknown`
                 );
-                personName = "unknown";
+                agentId = "unknown";
             }
 
             const voice_id =
-                personName === "whitepill"
+                agentId === "whitepill"
                     ? secrets.WHITEPILL_VOICE_ID
-                    : personName === "redpill"
+                    : agentId === "redpill"
                     ? secrets.REDPILL_VOICE_ID
-                    : personName === "blackpill"
+                    : agentId === "blackpill"
                     ? secrets.BLACKPILL_VOICE_ID
-                    : personName === "narrator"
+                    : agentId === "narrator"
                     ? secrets.NARRATOR_VOICE_ID
-                    : personName === "bluepill"
+                    : agentId === "bluepill"
                     ? secrets.BLUEPILL_VOICE_ID
                     : secrets.DEFAULT_VOICE_ID;
 
             console.log(
-                `🎤 Selected voice_id for ${personName}:`,
+                `🎤 Selected voice_id for ${agentId}:`,
                 voice_id ? "✅" : "❌"
             );
 
             try {
                 console.log(
-                    `🔊 Generating audio for entry ${i + 1}: "${line.substring(
+                    `🔊 Generating audio for entry ${i + 1}: "${text.substring(
                         0,
                         50
                     )}..."`
                 );
-                await generateAudio(
-                    voice_id ?? "",
-                    personName,
-                    line,
-                    i,
-                    secrets
-                );
+                await generateAudio(voice_id ?? "", agentId, text, i, secrets);
                 console.log(
                     `✅ Audio generated successfully for entry ${i + 1}`
                 );
 
                 audios.push({
-                    person: personName,
-                    audio: `public/voice/${personName}-${i}.mp3`,
+                    agentId: agentId,
+                    audio: `public/voice/${agentId}-${i}.mp3`,
                     index: i,
+                    tweet_id: transcript[i].tweet_id,
                 });
             } catch (error) {
                 console.error(
@@ -123,36 +81,6 @@ export async function generateTranscriptAudio(
         }
 
         console.log("📝 Generated audios array:", audios.length, "entries");
-        console.log("📄 Creating context file...");
-
-        const contextContent = `
-import { staticFile } from 'remotion';
-
-export const music: string = 'NONE';
-export const fps = 60;
-
-export const seasonNumber = 1; 
-export const seasonName = '${season.title}';
-export const episodeNumber = ${story.episode_number};
-export const storyName = '${story.title}';
-
-export const segmentBoundaries = {
-	${generateSegmentBoundaries(transcript, storyComponents)}
-};
-
-export const subtitlesFileName = [
-	${audios
-        .map(
-            (entry, i) => `{
-		name: '${entry.person}',
-		file: staticFile('srt/${entry.person}-${i}.srt'),
-	}`
-        )
-        .join(",\n    ")}
-];`;
-
-        await writeFile("./src/tmp/context.tsx", contextContent, "utf-8");
-        console.log("✅ Context file created successfully");
 
         return { audios, transcript };
     } catch (error) {
@@ -164,50 +92,6 @@ export const subtitlesFileName = [
         });
         throw error;
     }
-}
-
-// Then modify the generateSegmentBoundaries function
-function generateSegmentBoundaries(
-    transcript: TranscriptWithAgent[],
-    storyComponents: StoryComponentWithAgent[]
-): string {
-    const segments: string[] = [];
-    let currentComponentOrder = transcript[0]?.componentOrder;
-    let startIndex = 0;
-
-    for (let i = 0; i < transcript.length; i++) {
-        const entry = transcript[i];
-
-        if (entry.componentOrder !== currentComponentOrder) {
-            const component = storyComponents.find(
-                (c) => c.order === currentComponentOrder
-            );
-            segments.push(`${startIndex}: {
-		title: "${getRandomEmoji()} ${component?.title || ""}",
-		location: \`${component?.location?.name || "Unknown Location"}\`,
-		description: \`${component?.description || ""}\`,
-		endIndex: ${i - 1},
-	}`);
-
-            currentComponentOrder = entry.componentOrder;
-            startIndex = i;
-        }
-    }
-
-    // Last segment
-    if (startIndex < transcript.length) {
-        const component = storyComponents.find(
-            (c) => c.order === currentComponentOrder
-        );
-        segments.push(`${startIndex}: {
-		title: "${getRandomEmoji()} ${component?.title || "Unknown Scene"}",
-		location: \`${component?.location?.name || "Unknown Location"}\`,
-		description: \`${component?.description || ""}\`,
-		endIndex: ${transcript.length - 1},
-	}`);
-    }
-
-    return segments.join(",\n    ");
 }
 
 export async function generateAudio(
