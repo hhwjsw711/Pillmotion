@@ -143,20 +143,11 @@ function secondsToSrtTime(seconds: number) {
     return `${pad(hrs, 2)}:${pad(mins, 2)}:${pad(secs, 2)},${pad(millis, 3)}`;
 }
 
-export default async function transcribeFunction(
-    transcript: TranscriptWithAgent[],
-    season: Season,
-    story: Story,
-    storyComponents: StoryComponentWithAgent[],
+export default async function transcribe(
+    transcript: Transcript[],
     secrets: VideoSecrets
 ) {
-    const { audios } = await generateTranscriptAudio(
-        transcript,
-        season,
-        story,
-        storyComponents,
-        secrets
-    );
+    const { audios } = await generateTranscriptAudio(transcript, secrets);
     let startingTime = 0;
 
     console.log("🎬 Initial startingTime:", startingTime);
