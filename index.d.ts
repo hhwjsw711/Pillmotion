@@ -25,6 +25,7 @@ interface Story {
 interface VideoSecrets {
     OPENAI_API_KEY: string;
     CLAUDE_API_KEY: string;
+    MINIMAX_API_KEY: string;
     ELEVEN_API_KEY: string;
     NARRATOR_VOICE_ID: string;
     REDPILL_VOICE_ID: string;

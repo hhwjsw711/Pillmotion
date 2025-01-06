@@ -1,5 +1,5 @@
 import { writeFile } from "fs/promises";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
 export type Srt = {
     fileName: string;
@@ -82,10 +82,11 @@ async function cleanSrt(
     i: number,
     secrets: VideoSecrets
 ) {
-    const anthropic = new Anthropic({
-        apiKey: secrets.CLAUDE_API_KEY,
+    const openai = new OpenAI({
+        apiKey: secrets.MINIMAX_API_KEY,
+        baseURL: "https://api.minimax.chat/v1"
     });
-    const completion = await anthropic.messages.create({
+    const completion = await openai.chat.completions.create({
         messages: [
             {
                 role: "user",
@@ -100,10 +101,10 @@ async function cleanSrt(
                             ${srt}`,
             },
         ],
-        model: "claude-3-5-sonnet-latest",
+        model: "abab6.5s-chat",
         max_tokens: 8192,
     });
 
-    const responseContent = (completion.content[0] as any).text;
+    const responseContent = completion.choices[0].message.content;
     return { content: responseContent, i };
 }
