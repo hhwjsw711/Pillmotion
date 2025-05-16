@@ -16,7 +16,7 @@ import { cleanupResources, runBuild } from "./utils/buildUtils";
 const secrets: VideoSecrets = {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY!,
     CLAUDE_API_KEY: process.env.CLAUDE_API_KEY!,
-    MINIMAX_API_KEY: process.env.MINIMAX_API_KEY!,
+    DASHSCOPE_API_KEY: process.env.DASHSCOPE_API_KEY!,
     ELEVEN_API_KEY: process.env.ELEVEN_API_KEY!,
     NARRATOR_VOICE_ID: process.env.NARRATOR_VOICE_ID!,
     REDPILL_VOICE_ID: process.env.REDPILL_VOICE_ID!,

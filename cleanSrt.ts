@@ -83,8 +83,8 @@ async function cleanSrt(
     secrets: VideoSecrets
 ) {
     const openai = new OpenAI({
-        apiKey: secrets.MINIMAX_API_KEY,
-        baseURL: "https://api.minimax.chat/v1"
+        apiKey: secrets.DASHSCOPE_API_KEY,
+        baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
     });
     const completion = await openai.chat.completions.create({
         messages: [
@@ -101,7 +101,7 @@ async function cleanSrt(
                             ${srt}`,
             },
         ],
-        model: "abab6.5s-chat",
+        model: "qwen-plus",
         max_tokens: 8192,
     });
 

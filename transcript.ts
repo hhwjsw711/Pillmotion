@@ -53,8 +53,8 @@ export default async function generateMemeCoinTranscript(
     console.log("\n🔍 Searching for market data of token...");
 
     const openai = new OpenAI({
-        apiKey: secrets.MINIMAX_API_KEY,
-        baseURL: "https://api.minimax.chat/v1"
+        apiKey: secrets.DASHSCOPE_API_KEY,
+        baseURL: "https://dashscope.aliyuncs.com/compatible-mode/v1",
     });
 
     let foundValidToken = false;
@@ -211,7 +211,7 @@ export default async function generateMemeCoinTranscript(
                     },
                 ],
                 response_format: { type: "json_object" },
-                model: "abab6.5s-chat",
+                model: "qwen-turbo",
                 temperature: 0.5,
                 max_tokens: 4096,
                 top_p: 1,
