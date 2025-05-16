@@ -39,14 +39,14 @@ export async function generateTranscriptAudio(
                 agentId === "whitepill"
                     ? secrets.WHITEPILL_VOICE_ID
                     : agentId === "redpill"
-                    ? secrets.REDPILL_VOICE_ID
-                    : agentId === "blackpill"
-                    ? secrets.BLACKPILL_VOICE_ID
-                    : agentId === "narrator"
-                    ? secrets.NARRATOR_VOICE_ID
-                    : agentId === "bluepill"
-                    ? secrets.BLUEPILL_VOICE_ID
-                    : secrets.DEFAULT_VOICE_ID;
+                        ? secrets.REDPILL_VOICE_ID
+                        : agentId === "blackpill"
+                            ? secrets.BLACKPILL_VOICE_ID
+                            : agentId === "narrator"
+                                ? secrets.NARRATOR_VOICE_ID
+                                : agentId === "bluepill"
+                                    ? secrets.BLUEPILL_VOICE_ID
+                                    : secrets.DEFAULT_VOICE_ID;
 
             console.log(
                 `🎤 Selected voice_id for ${agentId}:`,
@@ -109,27 +109,36 @@ export async function generateAudio(
 
     try {
         const response = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${voice_id}?enable_logging=true&output_format=mp3_44100_64`,
+            `https://api.minimax.chat/v1/t2a_v2?GroupId=${secrets.MINIMAX_GROUP_ID}`,
             {
                 method: "POST",
                 headers: {
-                    "xi-api-key": secrets.ELEVEN_API_KEY ?? "",
                     "Content-Type": "application/json",
+                    'Authorization': `Bearer ${secrets.MINIMAX_API_KEY}`,
                 },
                 body: JSON.stringify({
-                    model_id: "eleven_multilingual_v2",
+                    model: "speech-02-turbo",
                     text: line,
-                    voice_settings: {
-                        stability: 0.5,
-                        similarity_boost: 0.75,
+                    stream: false,
+                    voice_setting: {
+                        voice_id: voice_id,
+                        speed: 1,
+                        vol: 1,
+                        pitch: 0,
                     },
+                    audio_setting: {
+                        sample_rate: 32000,
+                        bitrate: 128000,
+                        format: "mp3",
+                        channel: 1,
+                    }
                 }),
             }
         );
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("🚨 ElevenLabs API Error Details:", {
+            console.error("🚨 MiniMax API Error Details:", {
                 status: response.status,
                 statusText: response.statusText,
                 errorBody: errorText,
@@ -142,23 +151,31 @@ export async function generateAudio(
             );
         }
 
-        // Create directories if they don't exist
-        const dirPath = `${process.cwd()}/public/voice`;
-        if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
-        }
+        const jsonResponse = await response.json();
 
-        const audioStream = fs.createWriteStream(
-            `${process.cwd()}/public/voice/${person}-${index}.mp3`
-        );
-        response.body.pipe(audioStream);
+        if (jsonResponse.base_resp?.status_code === 0 && jsonResponse.data?.audio) {
+            const audioBuffer = Buffer.from(jsonResponse.data.audio, 'hex');
+            // Create directories if they don't exist
+            const dirPath = `${process.cwd()}/public/voice`;
+            if (!fs.existsSync(dirPath)) {
+                fs.mkdirSync(dirPath, { recursive: true });
+            }
+            const filePath = `${dirPath}/${person}-${index}.mp3`;
+            await fs.promises.writeFile(filePath, audioBuffer);
 
-        return new Promise((resolve, reject) => {
-            audioStream.on("finish", () => {
-                resolve("Audio file saved successfully");
+            console.log(`✅ Audio file saved successfully: ${filePath}`);
+            return "Audio file saved successfully";
+        } else {
+            console.error("🚨 MiniMax API Error: Invalid JSON response or error in base_resp", {
+                status: response.status,
+                base_resp: jsonResponse.base_resp,
+                hasAudioData: !!jsonResponse.data?.audio,
+                jsonResponsePreview: JSON.stringify(jsonResponse).substring(0, 500)
             });
-            audioStream.on("error", reject);
-        });
+            throw new Error(
+                `MiniMax API returned a successful HTTP status but the JSON response was invalid or indicated an error: ${jsonResponse.base_resp?.status_msg || 'Unknown MiniMax error'}`
+            );
+        }
     } catch (error) {
         console.error("❌ Detailed error in generateAudio:", {
             person,

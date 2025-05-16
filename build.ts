@@ -17,6 +17,8 @@ const secrets: VideoSecrets = {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY!,
     CLAUDE_API_KEY: process.env.CLAUDE_API_KEY!,
     DASHSCOPE_API_KEY: process.env.DASHSCOPE_API_KEY!,
+    MINIMAX_API_KEY: process.env.MINIMAX_API_KEY!,
+    MINIMAX_GROUP_ID: process.env.MINIMAX_GROUP_ID!,
     ELEVEN_API_KEY: process.env.ELEVEN_API_KEY!,
     NARRATOR_VOICE_ID: process.env.NARRATOR_VOICE_ID!,
     REDPILL_VOICE_ID: process.env.REDPILL_VOICE_ID!,
@@ -44,9 +46,14 @@ const { values } = parseArgs({
 });
 
 async function main() {
+    const runId = `Run-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    console.log(`🚀 Starting main function execution - ID: ${runId}`);
+
     const videoType = values.type as VideoType;
+    console.log(`📹 Video type for Run ID ${runId}: ${videoType}`);
     let transcript: Transcript[] = [];
     let contextContent: string = "";
+    let generatedAudioData: AudioInfo[] = [];
 
     switch (videoType) {
         case "story": {
@@ -56,8 +63,9 @@ async function main() {
                 transcript,
                 secrets
             );
+            generatedAudioData = audios;
             contextContent = generateStoryContextContent(
-                audios,
+                generatedAudioData,
                 storyTranscript,
                 season,
                 story,
@@ -85,9 +93,9 @@ async function main() {
                 transcript,
                 secrets
             );
-
+            generatedAudioData = audios;
             contextContent = generateMemeContextContent(
-                audios,
+                generatedAudioData,
                 agentA,
                 agentB,
                 duration,
@@ -106,9 +114,11 @@ async function main() {
     }
 
     await writeFile("./src/tmp/context.tsx", contextContent, "utf-8");
-    await transcribe(transcript, secrets);
+    await transcribe(transcript, secrets, generatedAudioData);
     await runBuild(videoType);
     await cleanupResources();
+
+    console.log(`🏁 Finished main function execution - ID: ${runId}`);
 }
 
 main();

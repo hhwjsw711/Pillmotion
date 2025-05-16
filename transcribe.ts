@@ -145,16 +145,17 @@ function secondsToSrtTime(seconds: number) {
 
 export default async function transcribe(
     transcript: Transcript[],
-    secrets: VideoSecrets
+    secrets: VideoSecrets,
+    generatedAudioData: AudioInfo[]
 ) {
-    const { audios } = await generateTranscriptAudio(transcript, secrets);
+    // const { audios } = await generateTranscriptAudio(transcript, secrets);
     let startingTime = 0;
 
     console.log("🎬 Initial startingTime:", startingTime);
     concatenateAudioFiles();
 
     const transcriptionResults = await transcribeAudio(
-        audios.map((audio) => audio.audio)
+        generatedAudioData.map((audio) => audio.audio)
     );
 
     if (!transcriptionResults) {
@@ -166,7 +167,7 @@ export default async function transcribe(
     for (let i = 0; i < transcriptionResults.length; i++) {
         console.log(`\n🎯 Processing SRT #${i} ==================`);
         const transcription = transcriptionResults[i][0];
-        const audio = audios[i];
+        const audio = generatedAudioData[i];
         console.log(`📝 Processing audio: ${audio.audio}`);
         console.log(`⏰ Current startingTime: ${startingTime}`);
 

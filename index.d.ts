@@ -26,6 +26,8 @@ interface VideoSecrets {
     OPENAI_API_KEY: string;
     CLAUDE_API_KEY: string;
     DASHSCOPE_API_KEY: string;
+    MINIMAX_API_KEY: string;
+    MINIMAX_GROUP_ID: string;
     ELEVEN_API_KEY: string;
     NARRATOR_VOICE_ID: string;
     REDPILL_VOICE_ID: string;
@@ -39,6 +41,13 @@ interface VideoSecrets {
 interface Transcript {
     agentId: string;
     text: string;
+}
+
+interface AudioInfo {
+    agentId: string;
+    audio: string;
+    index: number;
+    tweet_id?: string;
 }
 
 interface StoryTranscript extends Transcript {
